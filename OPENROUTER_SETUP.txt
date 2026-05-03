@@ -1,0 +1,18 @@
+
+FINAL IFA OpenRouter AI Setup
+
+This version is based on the uploaded v75 stable clean site.
+
+Netlify setup:
+1) Make sure the environment variable exists:
+   OPENROUTER_API_KEY
+2) Deploy this zip to the same Netlify project.
+3) Open the live site and test the assistant.
+
+Do not put the key in index.html.
+The function path is:
+netlify/functions/ifa-assistant.js
+
+WhatsApp labels shown:
+🟢 واتساب 1
+🟢 واتساب 2

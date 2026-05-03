@@ -1,0 +1,296 @@
+IFA Smart Assistant v30
+
+This version works in two modes:
+
+1) Local smart mode:
+- Works immediately without any API key.
+- Uses built-in IFA service knowledge and human-like fallback responses.
+
+2) Real AI mode:
+- Add OPENAI_API_KEY in Netlify:
+  Site settings > Environment variables > Add variable
+  Key: OPENAI_API_KEY
+  Value: your OpenAI API key
+- Optional:
+  OPENAI_MODEL = gpt-4o-mini or another compatible model.
+- Deploy again after adding the key.
+
+Notes:
+- Do not put the API key inside index.html.
+- The key is used only inside netlify/functions/ifa-assistant.js.
+- If the key is missing or fails, the assistant automatically falls back to local smart mode.
+
+V31 update: human-first opening, quick suggestions shown only at greeting/reset, then hidden during conversation.
+
+V32 update: removed fixed service menu, suggestions now appear inside first greeting only, with stronger motion and attention nudge.
+
+V33 update: welcome suggestions are typed/revealed live after greeting, not shown ready immediately.
+
+V34 update: slower live typing suggestions; each suggestion appears after a typing pause and is typed inside its chip; WhatsApp now has a calm contact nudge.
+
+V35 update: added premium motion to Start Request, View Services, and Send Request CTA buttons.
+
+V36 update: fixed assistant behavior and reliable CTA motion detector by visible text.
+
+V37 update: after every service reply, assistant now offers follow-up options: another service, WhatsApp, or restart.
+
+V40 Clean Stable:
+- Rebuilt from stable v37, not from v38/v39/v40 patched files.
+- Added Netlify Forms request submission.
+- Kept assistant behavior from v37.
+- Added only small contact dropdown and responsive fixes.
+
+Clean Plus update: added Instagram/email pulse motion and extra responsive safety while preserving stable layout.
+
+V40.2: Fixed Netlify form submission with static form attributes, hidden fallback form, and success page.
+
+V40.3: Removed success.html redirect from form submission. Form now stays on same page and shows inline result. success.html included only as backup.
+
+V40.4: Updated customer-facing success message after request submission.
+
+V40.5: Replaced technical Netlify error text with customer-friendly messages and WhatsApp fallback link.
+
+V41 Deep Local Assistant:
+- Added a large free local knowledge base for IFA services.
+- No OpenAI credit required.
+- Covers education/admissions, residence, expired residence, rejection, visas, insurance, translation, attestations, invitations, money transfers, prices, timelines, documents, remote service, and unclear cases.
+- Intercepts the assistant AI endpoint locally and replies from built-in IFA knowledge.
+
+V42 Warm Human Local Assistant:
+- Added human-like conversational layer.
+- Handles greetings, thanks, daily chat, unclear requests, worry/urgent tone, recommendations, comparisons, examples, and gentle follow-up questions.
+- Keeps the assistant free/local without OpenAI credit.
+
+V43 Deep Advisor Local Assistant:
+- Added deeper consulting behavior.
+- Added scenario-based replies: new in Turkey, new student, residence expiring soon, rejection, missing documents, comparing options.
+- Added explanatory examples and practical recommendations.
+- Added smarter suggestions based on category: admissions, residence, visas/travel.
+- Still 100% local/free, no OpenAI credit required.
+
+V44 Life Guide Local Assistant:
+- Expanded the local assistant with general life-in-Turkey guidance.
+- Added living costs, university fees, city selection, places to visit, housing/rent, transport, SIM/internet, bank accounts, food expenses, student life, and urgent cases.
+- Still 100% local/free and does not require OpenAI credit.
+
+V45 All-Round Local Assistant:
+- Expanded to cover work, work permits, health/hospitals, emergency cases, lost passport, e-Devlet, PTT, cargo, scams, document organization, appointments, tax number, family/kids/school, Turkish language, apps, weather/clothes, shopping, currency exchange, culture, airport arrival, first week in Turkey, and city-specific guidance.
+- Still local/free, no OpenAI credit required.
+
+V46 Human Life Local Assistant:
+- Added gentle support for life abroad, loneliness, homesickness, stress, relationships, love/feelings, friendship, conflicts, roommates, confidence, study motivation, financial stress, decision-making, boundaries, and mental health safety guidance.
+- This is supportive general guidance, not medical or psychological treatment.
+- Still 100% local/free, no OpenAI credit required.
+
+V47 University + Travel Guide:
+- Added Turkish university ranking-style tiers, approximate fee categories, admission condition comparison, public/private comparison, university selection quiz, city comparison for students.
+- Added tourism places, route/how-to-go guidance, trip planning, and travel budget guidance.
+- Fees/rankings are preliminary guidance only; official university websites must be checked before payment/application.
+- Local/free, no OpenAI credit required.
+
+V48 Full Life Companion:
+- Added broad everyday life guidance: rental contracts, deposits, bills, neighborhoods, smart shopping, cooking, daily routine, productivity, study plan, exam stress, language barrier, culture shock, digital safety, payment safety, daily rules, neighbors, laundry/cleaning, winter/summer life, family life, kids schools, women/family safety, social life, homesickness, food culture, fitness, sleep, and paperwork planning.
+- Local/free, no OpenAI credit required.
+
+V49 Extra Life Guide:
+- Added driving/license, used car, furniture, moving, address change, internship, CV, interview, networking, volunteering, scholarships, thesis, academic email, libraries, official offices, complaints, police, embassy, marriage, newborn, pets, delivery, online shopping, recycling, disability, elderly, religion, Ramadan, holidays, seasonal work, remote work, content creation, communication etiquette, document preparation, no-answer follow-up, negotiation, and trust/reliability.
+- Local/free, no OpenAI credit required.
+
+V50 Yemeni Community Guide:
+- Added source-informed local assistant coverage about Yemeni students/community in Türkiye and Sakarya.
+- Includes Yemeni Students Union in Turkey, Sakarya student activity, how to find/verify Instagram accounts, safety warnings, and new Yemeni student steps in Sakarya.
+- No direct Instagram handle is hardcoded unless verified from open source; users are advised to verify current official accounts.
+
+V51 Company Profile:
+- Added local assistant knowledge about IFA FOR PUBLIC SERVICES.
+- Added company owners/founders: Bader Al-Yousefi and Hisham Al-Ramsi.
+- Added mission, values, privacy guidance, why choose IFA, and how to contact/start a request.
+- Local/free, no OpenAI credit required.
+
+V52 Language + Suggestions Fix:
+- Reply language is now detected from the user's message.
+- Arabic questions force Arabic replies even if the website UI is English or Turkish.
+- Adds related suggestions after each reply based on detected topic.
+- Keeps all previous local/free knowledge layers.
+
+V53 Strong Local Assistant:
+- Stronger Arabic replies with direct structured answers.
+- Better topic detection.
+- Richer related suggestions after every Arabic reply.
+- Adds practical next step and required client info.
+- Keeps previous Turkish/English layers.
+
+V54 Clean Welcome Suggestions:
+- Removed WhatsApp 1 / WhatsApp 2 from the first assistant welcome quick buttons.
+- Keeps only service suggestions in the initial assistant screen.
+- External WhatsApp contact buttons remain available outside the assistant and WhatsApp can still be suggested in replies when needed.
+
+V55 Smart Chat Engine:
+- Adds a single stronger local engine with structured answers.
+- Each Arabic reply includes topic understanding, detailed answer, required info, follow-up suggestions, and practical next step.
+- Keeps WhatsApp buttons hidden from initial welcome suggestions.
+- Local/free, no OpenAI credit required.
+
+V56 Typo Smart Assistant:
+- Understands common Arabic typos and vague short questions.
+- Fixes "الجمعات" and "جمعات" to "الجامعات".
+- Adds direct strong responses for universities, residence, visa, housing, tourism, Yemeni community, and IFA company queries.
+
+V57 University Names Assistant:
+- When user asks about universities in Arabic, the assistant now gives concrete Turkish university names with city, type, strengths, and notes.
+- Handles typo "الجمعات" as "الجامعات".
+- Adds public and private/foundation university examples and selection guidance.
+
+
+V58 Pro Assistant Update:
+- Removed service counts/wording from service cards. Footer now shows only: click to view full details.
+- Added stronger local assistant layer with clearer structured replies, better topic detection, and follow-up suggestions.
+- Improved university answers with real university names and categorized recommendations.
+- Added simple context awareness for follow-up questions such as fees, documents, and timing.
+- Removed WhatsApp quick follow-up buttons inside assistant followup area to keep the experience cleaner.
+
+
+V59 General Life Assistant:
+- Assistant is no longer limited to IFA services.
+- Covers general life in Türkiye: universities, residence, housing, living costs, banking, phone/internet, transport, work, health, emergencies, tourism, culture, emotions, scams, Yemeni community, and IFA.
+- Keeps service card note clean: only “اضغط لعرض التفاصيل كاملة”.
+- Local/free assistant; no OpenAI API required.
+
+V60 Precision Context Assistant:
+- Replaced general assistant behavior with a stricter precision engine.
+- Uses previous context only for short follow-up messages like “كم الرسوم؟” or “ما الأوراق؟”.
+- If the user asks a new topic, it does not mix with the previous topic.
+- Adds safer, more accurate wording and avoids pretending exact prices/requirements are fixed.
+- Keeps service card footer clean.
+
+V61 Routine + Clickable Suggestions:
+- Added robust routine replies: greeting, who are you, how are you, thanks, start.
+- Added targeted replies for residence fees and university fees.
+- API now returns a suggestions array.
+- Added front-end clickable suggestion chips that fill/send the selected suggestion.
+- Keeps clean service card footer.
+
+V62 Better Assistant:
+- Added a simpler, stronger topic classifier to reduce wrong-topic answers.
+- Improved routine replies and service/life topics.
+- Improved university and residence fee answers.
+- Added clickable suggestion chips after many answers.
+- Uses context only for short follow-ups.
+- Still local/free; not a real cloud AI model.
+
+
+V63 Light Fast Assistant:
+- Removed all accumulated old assistant layers that caused lag/freezing.
+- Added one lightweight assistant engine only.
+- Lower CPU usage and fewer MutationObserver operations.
+- Keeps basic smart replies and clickable suggestions.
+- Best for mobile performance.
+
+
+V64 No Fixed Suggestions:
+- Removed fixed/pinned assistant suggestion chips.
+- API returns suggestions: [].
+- Assistant replies only to the user question.
+- Suggestions appear only inside normal text when the user explicitly asks for suggestions.
+- Kept lightweight performance profile.
+
+
+V65 Stronger No Pinned:
+- Fixes v64 over-conservative generic answer issue.
+- No fixed/pinned suggestion chips.
+- Stronger direct answers for universities, residence, fees, visa, insurance, housing, living costs, tourism, and IFA.
+- Keeps lightweight performance.
+
+
+V66 Visitor Counter:
+- Added a lightweight visitor counter displayed on the site.
+- Starts from 50.
+- Increments once per browser/device using localStorage.
+- Does not require backend/API and does not slow the site.
+- For a true global counter across all users/devices, connect Firebase/Supabase/Netlify database.
+
+
+V67 Knowledge + Counter Fixed:
+- Restored broad knowledge base while keeping site lightweight.
+- Covers universities, fees, residence, visa, insurance, housing, living costs, tourism, Yemeni community, IFA, work, banks, and transport.
+- Removed fixed suggestion chips.
+- Visitor counter now appears as a floating top badge and also tries to add a small header badge.
+- Counter starts from 50 and increments once per browser/device via localStorage.
+
+
+V68 Context Suggestions + Inline Counter:
+- Adds contextual clickable suggestion chips after assistant replies.
+- Suggestions match the reply topic.
+- Adds a contact representative button when human follow-up is appropriate.
+- Visitor counter is now inline in the page flow, not fixed; it moves with scrolling.
+- Counter starts from 50 and increments once per browser/device.
+
+
+V69 Language + Mobile + Counter Fix:
+- Assistant now detects Arabic/Turkish/English and replies in the same language.
+- Mobile-safe suggestion chips and message overflow handling.
+- Visitor counter appears once only.
+- Visitor counter is inside page flow, aligned left, and starts from 200.
+- Removes old duplicate counters from previous versions.
+
+
+V70 Clean Professional Rebuild:
+- Removed all previous assistant/counter enhancement layers to prevent conflicts.
+- Added one clean assistant engine only.
+- Contact representative chip now opens WhatsApp directly using IFA links.
+- Contextual clickable suggestions are restored.
+- Visitor counter appears once, starts from 200, and is inside page flow.
+- Mobile-safe styles for suggestions and chat messages.
+
+
+V71 Clean Chat Start:
+- Removes old fixed welcome chips from the assistant initial message.
+- Suggestions now appear only after actual topic answers, not at startup.
+- Contact representative option opens WhatsApp directly.
+- Keeps language detection Arabic/Turkish/English.
+- Visitor counter remains once, starts from 200, inside page flow.
+
+
+V72 No Initial Chips + Two WhatsApp:
+- Aggressively hides built-in initial service selector chips in the chat welcome.
+- Suggestions appear only after actual assistant replies.
+- Contact representative now opens both WhatsApp links:
+  WhatsApp 1: +90 537 605 33 28
+  WhatsApp 2: +967 737 930 450
+- Also displays both WhatsApp choices under contact-related assistant replies.
+- Visitor counter remains once, starts from 200.
+
+
+V73 Better Replies + Language Counter:
+- Improved assistant replies: shorter, clearer, more action-oriented.
+- Improved contextual suggestions after answers.
+- Initial fixed chips remain hidden.
+- Contact action shows both WhatsApp links.
+- Visitor counter label updates when language changes.
+- Visitor counter starts from 200 and appears once.
+
+
+V74 WhatsApp Emoji Buttons:
+- Contact buttons no longer display phone numbers inside the assistant.
+- Buttons show only:
+  🟢 واتساب 1
+  🟢 واتساب 2
+- Links remain connected to the same WhatsApp numbers.
+
+
+V75 Stable Clean:
+- Removed all previous custom assistant/counter layers.
+- Added one stable assistant/counter layer only.
+- Stable topic-based replies with contextual suggestions.
+- Hidden built-in welcome suggestion chips.
+- Contact shows WhatsApp emoji buttons only:
+  🟢 واتساب 1
+  🟢 واتساب 2
+- Visitor counter starts from 200, appears once, and updates label by language.
+
+
+FINAL OpenRouter AI based on uploaded v75 stable clean.
+- Real AI through Netlify Function.
+- Uses OPENROUTER_API_KEY.
+- Preserves v75 design as base.
+- No old local assistant answer engine.
