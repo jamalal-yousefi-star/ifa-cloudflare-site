@@ -837,44 +837,6 @@ img, svg, video{
   }
 </style>
 
-
-<!-- IFA_FINAL_CLEAN_PATCH_START -->
-<style>
-/* Hide duplicate fallback widgets only; keep the original IFA assistant design */
-#ifa-ai-widget,
-#ifa-ai-panel,
-#ifa-ai-button,
-#ifaNewAssistantRoot,
-#ifaNewAssistantPanel,
-#ifaNewOpenBtn,
-#ifaFinalAssistant,
-#ifaFinalPanel,
-#ifaFinalOpenBtn {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* Keep original assistant responsive and above page buttons */
-#ifaSmartAssistantBtn,
-.faSmartAssistantBtn,
-.faBotNudge {
-  z-index: 2147483647 !important;
-}
-
-#ifaSmartAssistantBox {
-  z-index: 2147483647 !important;
-}
-
-@media (max-width:640px){
-  #ifaSmartAssistantBox{
-    max-width: calc(100vw - 20px) !important;
-    max-height: calc(100vh - 95px) !important;
-  }
-}
-</style>
-<!-- IFA_FINAL_CLEAN_PATCH_END -->
-
 </head>
 <body>
 <header class="header">
