@@ -21,6 +21,7 @@ async function handleHealth(env) {
     ok: true,
     service: "IFA Cloudflare Worker",
     openrouter: Boolean(env.OPENROUTER_API_KEY),
+    model: env.AI_MODEL || "openrouter/free",
     resend: Boolean(env.RESEND_API_KEY),
     adminEmail: Boolean(env.ADMIN_EMAIL),
     kv: Boolean(env.IFA_KV)
@@ -57,8 +58,9 @@ async function handleAssistant(request, env) {
   const systemPrompt = env.AI_SYSTEM_PROMPT || `
 أنت مساعد خدمة عملاء رسمي لموقع ${siteName}.
 تحدث بالعربية الواضحة والودية.
-خدمات الشركة: القبولات الجامعية، التأشيرات، الإقامة، التأمين، الخدمات التعليمية والعامة.
-اجعل الإجابات قصيرة ومباشرة، واطلب من العميل التواصل عبر واتساب عند الحاجة.
+خدمات الشركة: القبولات الجامعية، التأشيرات، الإقامة، التأمين، الخدمات التعليمية والعامة، دفع رسوم الإقامة، التأمين الصحي، القبولات الجامعية، التأشيرات، والمتابعة.
+اجعل الإجابات قصيرة ومباشرة.
+إذا طلب العميل متابعة طلب أو خدمة فعلية، اطلب منه التواصل عبر واتساب.
 لا تخترع أسعارًا أو مواعيد نهائية غير مؤكدة.
 `;
 
@@ -80,13 +82,13 @@ async function handleAssistant(request, env) {
     headers: {
       "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": env.SITE_URL || "https://ifa-cloudflare-site.pages.dev",
+      "HTTP-Referer": env.SITE_URL || "https://ifa-cloudflare-site.jamal-al-yousefi.workers.dev",
       "X-Title": siteName
     },
     body: JSON.stringify({
       model,
       messages,
-      temperature: 0.4,
+      temperature: 0.35,
       max_tokens: 700
     })
   });
@@ -138,11 +140,11 @@ function escapeHtml(value) {
 async function handleContact(request, env) {
   const body = await request.json().catch(() => ({}));
 
-  const name = body.name || body.fullName || body.full_name || "";
-  const phone = body.phone || body.whatsapp || body.mobile || "";
+  const name = body.name || body.fullName || body.full_name || body["الاسم"] || "";
+  const phone = body.phone || body.whatsapp || body.mobile || body["رقم الهاتف"] || "";
   const email = body.email || "";
-  const service = body.service || body.subject || "طلب جديد من الموقع";
-  const message = body.message || body.notes || "";
+  const service = body.service || body.subject || body["نوع الخدمة"] || "طلب جديد من الموقع";
+  const message = body.message || body.notes || body["ملاحظات"] || "";
 
   if (!name && !phone && !email && !message) {
     return jsonResponse({
@@ -208,10 +210,163 @@ async function handleContact(request, env) {
 
   return jsonResponse({
     ok: true,
-    message: "تم استلام طلبك بنجاح.",
+    message: emailSent ? "تم إرسال الطلب بنجاح." : "تم استلام الطلب، لكن الإيميل غير مفعل بعد.",
     emailSent,
     emailNote
   });
+}
+
+const injectedScript = `
+<style>
+  #ifa-ai-widget *{box-sizing:border-box}
+  #ifa-ai-widget{position:fixed!important;right:16px!important;bottom:16px!important;z-index:2147483647!important;font-family:Arial,Tahoma,sans-serif!important;direction:rtl!important}
+  #ifa-ai-panel{display:none;width:min(360px,calc(100vw - 24px));height:min(520px,calc(100vh - 90px));background:#111827;border:1px solid rgba(245,196,94,.55);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;color:#fff}
+  #ifa-ai-widget.open #ifa-ai-panel{display:flex;flex-direction:column}
+  #ifa-ai-header{background:linear-gradient(135deg,#f6d56f,#b8860b);color:#111;padding:12px 14px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+  #ifa-ai-close{border:0;background:rgba(0,0,0,.15);border-radius:10px;width:32px;height:32px;font-size:18px;cursor:pointer}
+  #ifa-ai-messages{flex:1;overflow:auto;padding:12px;background:#0f172a;scroll-behavior:smooth}
+  .ifa-msg{max-width:88%;padding:10px 12px;margin:8px 0;border-radius:14px;line-height:1.6;font-size:14px;white-space:pre-wrap}
+  .ifa-bot{background:#1f2937;border:1px solid rgba(245,196,94,.35);margin-left:auto}
+  .ifa-user{background:#14532d;border:1px solid rgba(34,197,94,.45);margin-right:auto}
+  #ifa-ai-form{display:flex;gap:8px;padding:10px;background:#111827;border-top:1px solid rgba(245,196,94,.25)}
+  #ifa-ai-input{flex:1;min-width:0;border:1px solid rgba(245,196,94,.45);border-radius:12px;background:#0b1220;color:#fff;padding:11px;outline:none;font-size:14px}
+  #ifa-ai-send{border:0;border-radius:12px;background:linear-gradient(135deg,#f6d56f,#d4a017);color:#111;font-weight:800;padding:0 14px;cursor:pointer}
+  #ifa-ai-button{border:0;border-radius:999px;background:linear-gradient(135deg,#f6d56f,#d4a017);color:#111;font-weight:800;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.35);cursor:pointer;display:flex;gap:8px;align-items:center}
+  #ifa-ai-button span{font-size:13px;opacity:.85}
+  @media (max-width:600px){
+    #ifa-ai-widget{right:10px!important;bottom:10px!important}
+    #ifa-ai-panel{width:calc(100vw - 20px)!important;height:72vh!important;border-radius:16px}
+    #ifa-ai-button{padding:11px 13px;font-size:13px}
+    #ifa-ai-button span{display:none}
+  }
+</style>
+<script>
+(function(){
+  if(window.__IFA_AI_WIDGET_READY__) return;
+  window.__IFA_AI_WIDGET_READY__ = true;
+
+  function el(tag, attrs, html){
+    var n=document.createElement(tag);
+    if(attrs) Object.keys(attrs).forEach(function(k){ n.setAttribute(k, attrs[k]); });
+    if(html!==undefined) n.innerHTML=html;
+    return n;
+  }
+
+  function addMsg(text, who){
+    var box=document.getElementById('ifa-ai-messages');
+    if(!box) return;
+    var m=el('div',{class:'ifa-msg '+(who==='user'?'ifa-user':'ifa-bot')});
+    m.textContent=text;
+    box.appendChild(m);
+    box.scrollTop=box.scrollHeight;
+  }
+
+  async function askAI(text){
+    addMsg(text,'user');
+    addMsg('جاري كتابة الرد...', 'bot');
+    var box=document.getElementById('ifa-ai-messages');
+    var loading=box.lastChild;
+    try{
+      var res=await fetch('/api/ifa-assistant',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:text})
+      });
+      var data=await res.json();
+      loading.textContent = data.reply || data.message || 'لم يصل رد من المساعد. جرّب مرة أخرى.';
+    }catch(e){
+      loading.textContent='تعذر الاتصال بالمساعد الآن. تأكد من ربط OPENROUTER_API_KEY.';
+    }
+    box.scrollTop=box.scrollHeight;
+  }
+
+  function createWidget(){
+    if(document.getElementById('ifa-ai-widget')) return;
+    var wrap=el('div',{id:'ifa-ai-widget'});
+    wrap.innerHTML =
+      '<div id="ifa-ai-panel">'+
+        '<div id="ifa-ai-header"><div>مساعد IFA الذكي</div><button id="ifa-ai-close" type="button">×</button></div>'+
+        '<div id="ifa-ai-messages"></div>'+
+        '<form id="ifa-ai-form"><input id="ifa-ai-input" autocomplete="off" placeholder="اكتب رسالتك هنا..." /><button id="ifa-ai-send" type="submit">إرسال</button></form>'+
+      '</div>'+
+      '<button id="ifa-ai-button" type="button">✨ مساعد IFA <span>اسألني الآن</span></button>';
+    document.body.appendChild(wrap);
+
+    document.getElementById('ifa-ai-button').onclick=function(){
+      wrap.classList.add('open');
+      setTimeout(function(){
+        var inp=document.getElementById('ifa-ai-input');
+        if(inp) inp.focus();
+      },50);
+    };
+    document.getElementById('ifa-ai-close').onclick=function(){ wrap.classList.remove('open'); };
+    document.getElementById('ifa-ai-form').onsubmit=function(e){
+      e.preventDefault();
+      var inp=document.getElementById('ifa-ai-input');
+      var text=(inp.value||'').trim();
+      if(!text) return;
+      inp.value='';
+      askAI(text);
+    };
+
+    addMsg('مرحبًا بك في IFA للخدمات العامة 👋\\nكيف يمكنني مساعدتك؟ يمكنك السؤال عن التأشيرات، الإقامة، التأمين، القبولات الجامعية أو متابعة الطلبات.', 'bot');
+
+    if(window.innerWidth <= 600){
+      // يبقى ثابت أسفل الجوال ولا يقفز للأعلى.
+      wrap.style.position='fixed';
+      wrap.style.bottom='10px';
+      wrap.style.right='10px';
+    }
+  }
+
+  function enhanceForms(){
+    document.querySelectorAll('form').forEach(function(form){
+      if(form.__ifaBound) return;
+      form.__ifaBound=true;
+      form.addEventListener('submit', async function(e){
+        var submitText=(document.activeElement && document.activeElement.textContent || '').trim();
+        var looksLikeContact = /طلب|إرسال|ارسال|submit|send/i.test(submitText) || form.querySelector('input,textarea,select');
+        if(!looksLikeContact) return;
+        e.preventDefault();
+        var payload={};
+        new FormData(form).forEach(function(v,k){ payload[k]=v; });
+        form.querySelectorAll('input,textarea,select').forEach(function(x){
+          var key=x.name || x.id || x.placeholder || x.getAttribute('aria-label') || 'field';
+          if(x.value && !payload[key]) payload[key]=x.value;
+        });
+        try{
+          var res=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+          var data=await res.json();
+          alert(data.message || 'تم استلام طلبك.');
+        }catch(err){
+          alert('تعذر إرسال الطلب حاليًا. يرجى التواصل عبر واتساب.');
+        }
+      }, true);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    createWidget();
+    enhanceForms();
+    fetch('/api/visitors').catch(function(){});
+  });
+})();
+</script>
+`;
+
+class InjectHead {
+  element(element) {
+    element.append(injectedScript, { html: true });
+  }
+}
+
+async function serveAsset(request, env) {
+  const res = await env.ASSETS.fetch(request);
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("text/html")) {
+    return new HTMLRewriter().on("head", new InjectHead()).transform(res);
+  }
+  return res;
 }
 
 export default {
@@ -224,30 +379,14 @@ export default {
     }
 
     try {
-      if (path === "/api/health" && request.method === "GET") {
-        return handleHealth(env);
-      }
+      if (path === "/api/health" && request.method === "GET") return handleHealth(env);
+      if ((path === "/api/ifa-assistant" || path === "/api/chat") && request.method === "POST") return handleAssistant(request, env);
+      if (path === "/api/visitors" && (request.method === "GET" || request.method === "POST")) return handleVisitors(env);
+      if ((path === "/api/contact" || path === "/api/send-request") && request.method === "POST") return handleContact(request, env);
 
-      if ((path === "/api/ifa-assistant" || path === "/api/chat") && request.method === "POST") {
-        return handleAssistant(request, env);
-      }
-
-      if (path === "/api/visitors" && (request.method === "GET" || request.method === "POST")) {
-        return handleVisitors(env);
-      }
-
-      if ((path === "/api/contact" || path === "/api/send-request") && request.method === "POST") {
-        return handleContact(request, env);
-      }
-
-      // Serve static site files.
-      return env.ASSETS.fetch(request);
+      return serveAsset(request, env);
     } catch (error) {
-      return jsonResponse({
-        ok: false,
-        error: "server_error",
-        message: error.message
-      }, 500);
+      return jsonResponse({ ok: false, error: "server_error", message: error.message }, 500);
     }
   }
 };
