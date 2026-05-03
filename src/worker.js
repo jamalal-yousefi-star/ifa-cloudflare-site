@@ -186,69 +186,17 @@ async function handleContact(request, env) {
   });
 }
 
-const HOME_HTML = `<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IFA FOR PUBLIC SERVICES</title>
-<style>
-body{margin:0;background:#111827;color:white;font-family:Arial,Tahoma,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center}
-.card{max-width:720px;padding:30px;border:1px solid #d4a017;border-radius:24px;background:#0f172a}
-h1{color:#f6d56f}
-a{color:#f6d56f}
-#ifa-ai-widget *{box-sizing:border-box}
-#ifa-ai-widget{position:fixed!important;right:16px!important;bottom:16px!important;z-index:999999!important;direction:rtl!important;text-align:right}
-#ifa-ai-panel{display:none;width:min(360px,calc(100vw - 24px));height:min(520px,calc(100vh - 90px));background:#111827;border:1px solid rgba(245,196,94,.55);border-radius:18px;overflow:hidden;color:#fff;box-shadow:0 18px 50px rgba(0,0,0,.45)}
-#ifa-ai-widget.open #ifa-ai-panel{display:flex;flex-direction:column}
-#ifa-ai-header{background:linear-gradient(135deg,#f6d56f,#b8860b);color:#111;padding:12px 14px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
-#ifa-ai-close{border:0;background:rgba(0,0,0,.15);border-radius:10px;width:32px;height:32px;cursor:pointer}
-#ifa-ai-messages{flex:1;overflow:auto;padding:12px;background:#0f172a}
-.ifa-msg{max-width:88%;padding:10px 12px;margin:8px 0;border-radius:14px;line-height:1.6;font-size:14px;white-space:pre-wrap}
-.ifa-bot{background:#1f2937;border:1px solid rgba(245,196,94,.35);margin-left:auto}
-.ifa-user{background:#14532d;border:1px solid rgba(34,197,94,.45);margin-right:auto}
-#ifa-ai-form{display:flex;gap:8px;padding:10px;background:#111827;border-top:1px solid rgba(245,196,94,.25)}
-#ifa-ai-input{flex:1;border:1px solid rgba(245,196,94,.45);border-radius:12px;background:#0b1220;color:#fff;padding:11px;outline:none}
-#ifa-ai-send,#ifa-ai-button{border:0;border-radius:12px;background:linear-gradient(135deg,#f6d56f,#d4a017);color:#111;font-weight:800;cursor:pointer}
-#ifa-ai-send{padding:0 14px}
-#ifa-ai-button{border-radius:999px;padding:12px 16px}
-@media(max-width:600px){#ifa-ai-widget{right:10px!important;bottom:10px!important}#ifa-ai-panel{width:calc(100vw - 20px)!important;height:72vh!important}}
-</style>
-</head>
-<body>
-<div class="card">
-<h1>IFA FOR PUBLIC SERVICES</h1>
-<p>موقع IFA يعمل. المساعد الذكي متاح أسفل الصفحة.</p>
-<p>اختبار النظام: <a href="/api/health">/api/health</a></p>
-</div>
-<div id="ifa-ai-widget">
-<div id="ifa-ai-panel">
-<div id="ifa-ai-header"><div>مساعد IFA الذكي</div><button id="ifa-ai-close">×</button></div>
-<div id="ifa-ai-messages"></div>
-<form id="ifa-ai-form"><input id="ifa-ai-input" placeholder="اكتب رسالتك هنا..."><button id="ifa-ai-send">إرسال</button></form>
-</div>
-<button id="ifa-ai-button">✨ مساعد IFA</button>
-</div>
-<script>
-(function(){
-function addMsg(text,who){var box=document.getElementById('ifa-ai-messages');var m=document.createElement('div');m.className='ifa-msg '+(who==='user'?'ifa-user':'ifa-bot');m.textContent=text;box.appendChild(m);box.scrollTop=box.scrollHeight;}
-var wrap=document.getElementById('ifa-ai-widget');
-document.getElementById('ifa-ai-button').onclick=function(){wrap.classList.add('open');};
-document.getElementById('ifa-ai-close').onclick=function(){wrap.classList.remove('open');};
-addMsg('مرحبًا بك في IFA FOR PUBLIC SERVICES 👋\\nأنا مساعد IFA الذكي. كيف يمكنني مساعدتك اليوم؟','bot');
-document.getElementById('ifa-ai-form').onsubmit=async function(e){
- e.preventDefault();
- var inp=document.getElementById('ifa-ai-input'); var text=(inp.value||'').trim(); if(!text)return; inp.value='';
- addMsg(text,'user'); addMsg('جاري كتابة الرد...','bot');
- var box=document.getElementById('ifa-ai-messages'); var loading=box.lastChild;
- try{
-  var res=await fetch('/api/ifa-assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
-  var data=await res.json(); loading.textContent=data.reply||data.message||'لم يصل رد من المساعد.';
- }catch(err){loading.textContent='تعذر الاتصال بالمساعد الآن.';}
-};
-})();
-</script>
-</body></html>`;
+
+
+async function serveStatic(request, env) {
+  if (env.ASSETS && env.ASSETS.fetch) {
+    return env.ASSETS.fetch(request);
+  }
+  return new Response("Static assets are not configured. API endpoints are working.", {
+    status: 404,
+    headers: { "Content-Type": "text/plain; charset=utf-8" }
+  });
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -262,7 +210,7 @@ export default {
       if ((path === "/api/ifa-assistant" || path === "/api/chat") && request.method === "POST") return handleAssistant(request, env);
       if (path === "/api/visitors") return handleVisitors(env);
       if ((path === "/api/contact" || path === "/api/send-request") && request.method === "POST") return handleContact(request, env);
-      return new Response(HOME_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      return serveStatic(request, env);
     } catch (error) {
       return jsonResponse({ ok: false, error: "server_error", message: error.message }, 500);
     }
