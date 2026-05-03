@@ -16,12 +16,27 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-async function handleHealth(env) {
+async function readKnowledgeBase(request, env) {
+  try {
+    const kbUrl = new URL("/ifa-knowledge-base.txt", request.url);
+    const kbRes = await env.ASSETS.fetch(new Request(kbUrl.toString(), { method: "GET" }));
+    if (!kbRes.ok) return "";
+    const text = await kbRes.text();
+    return text.slice(0, 24000);
+  } catch (_) {
+    return "";
+  }
+}
+
+async function handleHealth(request, env) {
+  const kb = await readKnowledgeBase(request, env);
   return jsonResponse({
     ok: true,
     service: "IFA Cloudflare Worker",
     openrouter: Boolean(env.OPENROUTER_API_KEY),
     model: env.AI_MODEL || "openrouter/free",
+    knowledgeBase: kb.length > 100,
+    knowledgeBaseCharacters: kb.length,
     resend: Boolean(env.RESEND_API_KEY),
     adminEmail: Boolean(env.ADMIN_EMAIL),
     kv: Boolean(env.IFA_KV)
@@ -54,14 +69,21 @@ async function handleAssistant(request, env) {
 
   const siteName = env.SITE_NAME || "IFA FOR PUBLIC SERVICES";
   const model = env.AI_MODEL || "openrouter/free";
+  const knowledgeBase = await readKnowledgeBase(request, env);
 
-  const systemPrompt = env.AI_SYSTEM_PROMPT || `
-أنت مساعد خدمة عملاء رسمي لموقع ${siteName}.
-تحدث بالعربية الواضحة والودية.
-خدمات الشركة: القبولات الجامعية، التأشيرات، الإقامة، التأمين، الخدمات التعليمية والعامة، دفع رسوم الإقامة، التأمين الصحي، القبولات الجامعية، التأشيرات، والمتابعة.
-اجعل الإجابات قصيرة ومباشرة.
-إذا طلب العميل متابعة طلب أو خدمة فعلية، اطلب منه التواصل عبر واتساب.
-لا تخترع أسعارًا أو مواعيد نهائية غير مؤكدة.
+  const shortPrompt = env.AI_SYSTEM_PROMPT || `
+أنت مساعد IFA الذكي. رد بنفس لغة العميل. كن ودودًا ومختصرًا ومهنيًا.
+لا تخترع أسعارًا أو مواعيد أو ضمانات. إذا طلب العميل خدمة، اجمع التفاصيل الأساسية ووجهه لفريق IFA عبر واتساب.
+`;
+
+  const systemPrompt = `
+${shortPrompt}
+
+استخدم قاعدة معرفة IFA التالية كأساس لإجاباتك. إذا وُجدت معلومة في قاعدة المعرفة، التزم بها. إذا لم توجد معلومة، لا تخترعها وقل إن فريق IFA يمكنه التحقق.
+
+--- IFA KNOWLEDGE BASE START ---
+${knowledgeBase || "قاعدة المعرفة غير متاحة حاليًا. استخدم التعليمات العامة فقط."}
+--- IFA KNOWLEDGE BASE END ---
 `;
 
   const messages = Array.isArray(body.messages)
@@ -88,7 +110,7 @@ async function handleAssistant(request, env) {
     body: JSON.stringify({
       model,
       messages,
-      temperature: 0.35,
+      temperature: 0.25,
       max_tokens: 700
     })
   });
@@ -110,7 +132,7 @@ async function handleAssistant(request, env) {
     data?.choices?.[0]?.text ||
     "لم أستطع تجهيز رد الآن. حاول مرة أخرى.";
 
-  return jsonResponse({ ok: true, reply, model: data?.model || model });
+  return jsonResponse({ ok: true, reply, model: data?.model || model, knowledgeBase: knowledgeBase.length > 100 });
 }
 
 async function handleVisitors(env) {
@@ -309,45 +331,17 @@ const injectedScript = `
       askAI(text);
     };
 
-    addMsg('مرحبًا بك في IFA للخدمات العامة 👋\\nكيف يمكنني مساعدتك؟ يمكنك السؤال عن التأشيرات، الإقامة، التأمين، القبولات الجامعية أو متابعة الطلبات.', 'bot');
+    addMsg('مرحبًا بك في IFA FOR PUBLIC SERVICES 👋\\nأنا مساعد IFA الذكي. كيف يمكنني مساعدتك اليوم؟\\n\\nيمكنني مساعدتك في القبولات الجامعية، الإقامة، التأمين، التأشيرات، المعاهد، الترجمة، التصديق، ومتابعة الطلبات.', 'bot');
 
     if(window.innerWidth <= 600){
-      // يبقى ثابت أسفل الجوال ولا يقفز للأعلى.
       wrap.style.position='fixed';
       wrap.style.bottom='10px';
       wrap.style.right='10px';
     }
   }
 
-  function enhanceForms(){
-    document.querySelectorAll('form').forEach(function(form){
-      if(form.__ifaBound) return;
-      form.__ifaBound=true;
-      form.addEventListener('submit', async function(e){
-        var submitText=(document.activeElement && document.activeElement.textContent || '').trim();
-        var looksLikeContact = /طلب|إرسال|ارسال|submit|send/i.test(submitText) || form.querySelector('input,textarea,select');
-        if(!looksLikeContact) return;
-        e.preventDefault();
-        var payload={};
-        new FormData(form).forEach(function(v,k){ payload[k]=v; });
-        form.querySelectorAll('input,textarea,select').forEach(function(x){
-          var key=x.name || x.id || x.placeholder || x.getAttribute('aria-label') || 'field';
-          if(x.value && !payload[key]) payload[key]=x.value;
-        });
-        try{
-          var res=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-          var data=await res.json();
-          alert(data.message || 'تم استلام طلبك.');
-        }catch(err){
-          alert('تعذر إرسال الطلب حاليًا. يرجى التواصل عبر واتساب.');
-        }
-      }, true);
-    });
-  }
-
   document.addEventListener('DOMContentLoaded', function(){
     createWidget();
-    enhanceForms();
     fetch('/api/visitors').catch(function(){});
   });
 })();
@@ -379,7 +373,7 @@ export default {
     }
 
     try {
-      if (path === "/api/health" && request.method === "GET") return handleHealth(env);
+      if (path === "/api/health" && request.method === "GET") return handleHealth(request, env);
       if ((path === "/api/ifa-assistant" || path === "/api/chat") && request.method === "POST") return handleAssistant(request, env);
       if (path === "/api/visitors" && (request.method === "GET" || request.method === "POST")) return handleVisitors(env);
       if ((path === "/api/contact" || path === "/api/send-request") && request.method === "POST") return handleContact(request, env);
