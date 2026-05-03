@@ -16,7 +16,7 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-async function readKnowledgeBase(request, env) {
+async function readKnowledgeBase() {
   return `
 IFA FOR PUBLIC SERVICES هي شركة خدمات عامة وتعليمية في تركيا.
 
@@ -80,15 +80,16 @@ IFA تساعد في ترجمة وتصديق الشهادات، كشف الدرج
 }
 
 async function handleHealth(request, env) {
-  const kb = await readKnowledgeBase(request, env);
+  const kb = await readKnowledgeBase();
   return jsonResponse({
     ok: true,
     service: "IFA Cloudflare Worker",
     openrouter: Boolean(env.OPENROUTER_API_KEY),
-    model: env.AI_MODEL || "openrouter/free",
+    model: env.AI_MODEL || "openrouter/auto",
     knowledgeBase: kb.length > 100,
     knowledgeBaseCharacters: kb.length,
-    internalKB: true
+    internalKB: true,
+    assetsBinding: Boolean(env.ASSETS && env.ASSETS.fetch)
   });
 }
 
@@ -105,13 +106,16 @@ async function handleAssistant(request, env) {
   }
 
   if (!env.OPENROUTER_API_KEY) {
-    return jsonResponse({ ok: false, error: "missing_OPENROUTER_API_KEY", reply: "المساعد غير مفعل بعد. أضف OPENROUTER_API_KEY في Cloudflare Variables." }, 500);
+    return jsonResponse({
+      ok: false,
+      error: "missing_OPENROUTER_API_KEY",
+      reply: "المساعد غير مفعل بعد. أضف OPENROUTER_API_KEY في Cloudflare Variables ثم اعمل Deploy."
+    }, 500);
   }
 
   const siteName = env.SITE_NAME || "IFA FOR PUBLIC SERVICES";
-  const model = env.AI_MODEL || "openrouter/free";
-  const knowledgeBase = await readKnowledgeBase(request, env);
-
+  const model = env.AI_MODEL || "openrouter/auto";
+  const knowledgeBase = await readKnowledgeBase();
   const shortPrompt = env.AI_SYSTEM_PROMPT || "أنت مساعد IFA الذكي. رد بنفس لغة العميل. كن ودودًا ومختصرًا ومهنيًا. لا تخترع أسعارًا أو مواعيد أو ضمانات.";
 
   const systemPrompt = `
@@ -161,7 +165,7 @@ ${knowledgeBase}
       error: "openrouter_error",
       status: response.status,
       details: data,
-      reply: "حصل خطأ في الاتصال بالمساعد الذكي. تأكد من مفتاح OpenRouter والمتغيرات."
+      reply: "حصل خطأ في الاتصال بالمساعد الذكي. تأكد من مفتاح OpenRouter، ومن AI_MODEL إذا أضفته."
     }, 502);
   }
 
@@ -186,14 +190,12 @@ async function handleContact(request, env) {
   });
 }
 
-
-
 async function serveStatic(request, env) {
   if (env.ASSETS && env.ASSETS.fetch) {
     return env.ASSETS.fetch(request);
   }
-  return new Response("Static assets are not configured. API endpoints are working.", {
-    status: 404,
+  return new Response("ASSETS binding is missing. Check wrangler.toml [assets] binding = \"ASSETS\".", {
+    status: 500,
     headers: { "Content-Type": "text/plain; charset=utf-8" }
   });
 }
@@ -203,13 +205,18 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders() });
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders() });
+    }
 
     try {
       if (path === "/api/health" && request.method === "GET") return handleHealth(request, env);
       if ((path === "/api/ifa-assistant" || path === "/api/chat") && request.method === "POST") return handleAssistant(request, env);
       if (path === "/api/visitors") return handleVisitors(env);
       if ((path === "/api/contact" || path === "/api/send-request") && request.method === "POST") return handleContact(request, env);
+
+      // Important: never return a fallback HTML from Worker.
+      // All website pages, design, images, and the original assistant must come from index.html/assets.
       return serveStatic(request, env);
     } catch (error) {
       return jsonResponse({ ok: false, error: "server_error", message: error.message }, 500);
