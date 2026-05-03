@@ -3033,6 +3033,46 @@ Please share the sending country, receiving country, and approximate amount.`}
 })();
 </script>
 <!-- ASSISTANT_END -->
+<style>
+/* إخفاء زر المساعد عندما تكون نافذة المساعد مفتوحة */
+body:has(#ifaSmartAssistantBox[style*="display: block"]) #ifaSmartAssistantBtn,
+body:has(#ifaSmartAssistantBox[style*="display: flex"]) #ifaSmartAssistantBtn,
+body:has(#ifaSmartAssistantBox.open) #ifaSmartAssistantBtn,
+body:has(#ifaSmartAssistantBox.active) #ifaSmartAssistantBtn {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+</style>
 
+<script>
+(function(){
+  function fixAssistantButton(){
+    var panel = document.getElementById("ifaSmartAssistantBox");
+    var btn = document.getElementById("ifaSmartAssistantBtn");
+    if(!panel || !btn) return;
+
+    var st = window.getComputedStyle(panel);
+    var isOpen = st.display !== "none" && st.visibility !== "hidden" && panel.offsetHeight > 50;
+
+    if(isOpen){
+      btn.style.display = "none";
+      btn.style.visibility = "hidden";
+      btn.style.pointerEvents = "none";
+    } else {
+      btn.style.display = "";
+      btn.style.visibility = "";
+      btn.style.pointerEvents = "";
+    }
+  }
+
+  document.addEventListener("click", function(){
+    setTimeout(fixAssistantButton, 80);
+    setTimeout(fixAssistantButton, 300);
+  }, true);
+
+  setInterval(fixAssistantButton, 500);
+})();
+</script>
 </body>
 </html>
